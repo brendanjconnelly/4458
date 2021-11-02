@@ -96,6 +96,14 @@ class Robot : public frc::TimedRobot {
     intake = leftTrigger;
     if(leftTrigger || rightTrigger) conveyor = 1;
 
+    if(m_rightStick.GetRawButton(3)) {
+      ejectL0 = 0.25;
+      ejectR0 = 0.25;
+    }
+    if(m_rightStick.GetRawButton(4)) {
+      ejectL0 = 0.5;
+      ejectR0 = 0.5;
+    }
     if(m_rightStick.GetRawButton(2)) {
       ejectL0 = 1;
       ejectR0 = 1;
@@ -106,16 +114,6 @@ class Robot : public frc::TimedRobot {
       ejectR1 = -1;
       intake = -1;
     }
-  }
-
-  static void turnThread(float *turn, int degrees) {
-    *turn = -1;
-    std::chrono::milliseconds time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            while(time.count() + 50 > now.count()) {
-              (*turn) = -1;
-              now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            }
   }
 
   void TeleopPeriodic() override { 
@@ -142,8 +140,6 @@ class Robot : public frc::TimedRobot {
       ejectL1 = 0;
       ejectR1 = 0;
 
-      arm = 0;
-
       intake = 0;
       conveyor = 0;
       
@@ -166,26 +162,17 @@ class Robot : public frc::TimedRobot {
         case 1: // this is the default profile
           if(rightX == 0) {} // figure the gyro out (if we get one)
           driveL0 = leftY - (rightX * 2);
-          driveR0 = leftY -  (-rightX * 2);
+          driveR0 = leftY - (rightX * 2);
           driveL1 = leftY - (rightX * 2);
-          driveR1 = leftY - (-rightX * 2);
+          driveR1 = leftY - (rightX * 2);
           spencerShoot();
           spencerArm();
 
-          if(m_rightStick.GetRawButtonPressed(9)) { // 720
-            std::thread thread(turnThread, &turnTable, 720);
-            thread.detach();
-          }
-          if(m_rightStick.GetRawButton(10)) { // 765
+          if(m_rightStick.GetRawButton(9)) {
             turnTable = -1;
+          } else if(m_rightStick.GetRawButton(10)) {
+            turnTable = 1;
           }
-          if(m_rightStick.GetRawButton(11)) { // 810
-            turnTable = -1;
-          }
-          if(m_rightStick.GetRawButton(12)) { // 855
-            turnTable = -1;
-          }
-
           break;
         case 2:
           m_driveMotorL0.Set(-leftY + (leftX * 2));
@@ -217,21 +204,18 @@ class Robot : public frc::TimedRobot {
 
         m_turnTableMotor.Set(turnTable);
         m_hookMotor.Set(hook);
-
-        m_armMotor.Set(arm);
       }
     }
 
     void RobotInit() override {
       // std::thread visionThread(VisionThread);
-      // visionThread.\detach();
+      // visionThread.detach();
       armEncoder.SetReverseDirection(true);
       m_driveMotorL0.SetInverted(true);
       m_driveMotorL1.SetInverted(true);
-      m_intakeMotor.SetInverted(true);
-
       m_ejectMotorL0.SetInverted(true);
       m_ejectMotorL1.SetInverted(true);
+      m_intakeMotor.SetInverted(true);
     }
 
     void AutonomousInit() override {
@@ -253,16 +237,18 @@ class Robot : public frc::TimedRobot {
       m_ejectMotorR0.Set(0);
 
 
-      m_driveMotorL0.Set(0.5);
-      m_driveMotorR0.Set(0.5);
-      m_driveMotorL1.Set(0.5);
-      m_driveMotorR1.Set(0.5);
-      std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+      m_driveMotorL0.Set(0.05);
+      m_driveMotorR0.Set(0.05);
+      m_driveMotorL1.Set(0.05);
+      m_driveMotorR1.Set(0.05);
+      std::this_thread::sleep_for(std::chrono::milliseconds(6000));
       m_driveMotorL0.Set(0);
       m_driveMotorR0.Set(0);
       m_driveMotorL1.Set(0);
       m_driveMotorR1.Set(0);
     }
+
+    
 
  private:
   frc::Joystick m_leftStick{0};
@@ -288,7 +274,6 @@ class Robot : public frc::TimedRobot {
   frc::PWMSparkMax m_turnTableMotor{18};
 
   frc::Encoder armEncoder{4, 5};
-
 
 };
 
