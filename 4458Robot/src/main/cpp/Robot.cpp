@@ -1,7 +1,7 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-// OLD NAME TankTeleop
+
 #include <frc/Joystick.h>
 #include <frc/PWMSparkMax.h>
 #include <frc/Encoder.h>
@@ -10,10 +10,10 @@
 #include <stdlib.h>
 #include <iostream>
 
-#include <cameraserver/CameraServer.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+// #include <cameraserver/CameraServer.h>
+// #include <opencv2/core/core.hpp>
+// #include <opencv2/core/types.hpp>
+// #include <opencv2/imgproc/imgproc.hpp>
 
 #include "Constants.h"
 
@@ -67,16 +67,15 @@ class Robot : public frc::TimedRobot {
 
 
   void spencerArm() {
-    wpi::outs() << armEncoder.GetDistance();
-     if(m_leftStick.GetRawButton(6)) {
-       arm = 1;
-     } else if(m_leftStick.GetRawButton(4)) {  
-       if(armEncoder.GetDistance() > 0) {
-         arm = -1;
-       }
-     }
+    if(m_leftStick.GetRawButton(6)) {
+      arm = 1;
+    } else if(m_leftStick.GetRawButton(4)) {  
+      if(armEncoder.GetDistance() > 0) {
+        arm = -1;
+      }
+    }
+    
     if(m_leftStick.GetRawButtonPressed(12)) {
-      armEncoder.SetReverseDirection(true);
       armEncoder.Reset();
     }
 
@@ -109,13 +108,12 @@ class Robot : public frc::TimedRobot {
   }
 
   static void turnThread(float *turn, int degrees) {
-    *turn = -1;
     std::chrono::milliseconds time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            while(time.count() + 50 > now.count()) {
-              (*turn) = -1;
-              now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-            }
+    std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    while(time.count() + 725*(degrees/360*8) > now.count()) {
+      (*turn) = -0.25;
+      now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    }
   }
 
   void TeleopPeriodic() override { 
@@ -172,18 +170,32 @@ class Robot : public frc::TimedRobot {
           spencerShoot();
           spencerArm();
 
+          if(m_rightStick.GetRawButtonPressed(5)) {
+            std::thread thread(turnThread, &turnTable, 1440);
+            thread.detach();
+          } 
           if(m_rightStick.GetRawButtonPressed(9)) { // 720
             std::thread thread(turnThread, &turnTable, 720);
             thread.detach();
           }
-          if(m_rightStick.GetRawButton(10)) { // 765
-            turnTable = -1;
+          if(m_rightStick.GetRawButtonPressed(10)) { // 765
+            std::thread thread(turnThread, &turnTable, 765);
+            thread.detach();
           }
-          if(m_rightStick.GetRawButton(11)) { // 810
-            turnTable = -1;
+          if(m_rightStick.GetRawButtonPressed(11)) { // 810
+            std::thread thread(turnThread, &turnTable, 810);
+            thread.detach();
           }
-          if(m_rightStick.GetRawButton(12)) { // 855
-            turnTable = -1;
+          if(m_rightStick.GetRawButtonPressed(12)) { // 855
+            std::thread thread(turnThread, &turnTable, 855);
+            thread.detach();
+          }
+
+          if(m_rightStick.GetRawButton(6)) {
+            turnTable = -0.25;
+          }
+          if(m_rightStick.GetRawButton(4)) {
+            turnTable = 0.25;
           }
 
           break;
@@ -228,8 +240,8 @@ class Robot : public frc::TimedRobot {
       armEncoder.SetReverseDirection(true);
       m_driveMotorL0.SetInverted(true);
       m_driveMotorL1.SetInverted(true);
-      m_intakeMotor.SetInverted(true);
 
+      m_intakeMotor.SetInverted(true);
       m_ejectMotorL0.SetInverted(true);
       m_ejectMotorL1.SetInverted(true);
     }
