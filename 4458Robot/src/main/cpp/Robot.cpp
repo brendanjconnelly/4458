@@ -67,6 +67,10 @@ class Robot : public frc::TimedRobot {
   float turnTable = 0;
   float hook = 0;
 
+  frc::Color red{200, 0, 0};
+  frc::Color yellow{200, 200, 0};
+  frc::Color blue{0, 200, 200};
+  frc::Color green{0, 200, 0};
 
   void spencerArm() {
     if(m_leftStick.GetRawButton(6)) {
@@ -109,13 +113,40 @@ class Robot : public frc::TimedRobot {
     }
   }
 
-  static void turnThread(float *turn, int degrees) {
-    std::chrono::milliseconds time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    while(time.count() + 725*(degrees/360*8) > now.count()) {
-      (*turn) = -0.25;
-      now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+  bool colorsEqual(frc::Color c1, frc::Color c2 { // huge range of 110 here lol
+    if(c1.red - 55 < c2.red && c1.red + 55 > c2.red) {
+      if(c1.blue - 55 < c2.blue && c1.blue + 55 > c2.blue) {
+        if(c1.green - 55 < c2.green && c1.green + 55 > c2.green) {
+          return true;
+        }
+      }
     }
+    return false;
+  }
+
+  void turnThread(frc::Color targetColor) {
+    // std::chrono::milliseconds time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    // std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    // while(time.count() + 725*(degrees/360*8) > now.count()) {
+    //   (*turn) = -0.25;
+    //   now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    // }
+
+    int piecesTravelled = 0;
+    frc::Color initialColor = sensor.GetColor();
+    frc::Color prevColor = sensor.GetColor();
+    while(piecesTravelled <= 24) {
+      turnTable = -1;
+      if(!colorsEqual(prevColor, sensor.GetColor())) {
+        piecesTravelled++;
+      }
+      prevColor = sensor.GetColor();
+    }
+
+    while(!colorsEqual(sensor.GetColor(), targetColor)) {
+      turnTable = -1;
+    }
+      
   }
 
   void TeleopPeriodic() override { 
@@ -172,24 +203,23 @@ class Robot : public frc::TimedRobot {
           spencerShoot();
           spencerArm();
 
-          if(m_rightStick.GetRawButtonPressed(5)) {
-            std::thread thread(turnThread, &turnTable, 1440);
-            thread.detach();
-          } 
+          // if(m_rightStick.GetRawButtonPressed(5)) {
+          //   thread.detach();
+          // } 
           if(m_rightStick.GetRawButtonPressed(9)) { // 720
-            std::thread thread(turnThread, &turnTable, 720);
+            std::thread thread(turnThread, green);
             thread.detach();
           }
           if(m_rightStick.GetRawButtonPressed(10)) { // 765
-            std::thread thread(turnThread, &turnTable, 765);
+            std::thread thread(turnThread, blue);
             thread.detach();
           }
           if(m_rightStick.GetRawButtonPressed(11)) { // 810
-            std::thread thread(turnThread, &turnTable, 810);
+            std::thread thread(turnThread, yellow);
             thread.detach();
           }
           if(m_rightStick.GetRawButtonPressed(12)) { // 855
-            std::thread thread(turnThread, &turnTable, 855);
+            std::thread thread(turnThread, red);
             thread.detach();
           }
 
@@ -234,6 +264,8 @@ class Robot : public frc::TimedRobot {
 
         m_armMotor.Set(arm);
       }
+
+      // frc::SmartDashboard::PutNumber("Test", 1);
     }
 
     void RobotInit() override {
