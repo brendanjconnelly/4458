@@ -17,6 +17,8 @@
 
 #include "Constants.h"
 
+#include "rev/ColorSensorV3.h"
+
 void deadzone(float *stick, float deadzoneValue) {
   if(abs(*stick) < deadzoneValue) {
     *stick = 0;
@@ -301,6 +303,7 @@ class Robot : public frc::TimedRobot {
 
   frc::Encoder armEncoder{4, 5};
 
+  rev::ColorSensorV3 sensor{frc::I2C::Port::kOnboard};
 
 };
 
