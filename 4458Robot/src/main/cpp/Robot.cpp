@@ -9,6 +9,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
+#include <thread>
+#include "rev/ColorMatch.h"
 
 // #include <cameraserver/CameraServer.h>
 // #include <opencv2/core/core.hpp>
@@ -18,7 +20,7 @@
 #include "Constants.h"
 
 #include "rev/ColorSensorV3.h"
-
+int turnTest = 0;
 void deadzone(float *stick, float deadzoneValue) {
   if(abs(*stick) < deadzoneValue) {
     *stick = 0;
@@ -36,20 +38,7 @@ void coast(float *stick, float newPosition, float coastInc) {
   }
 }
 
-class Robot : public frc::TimedRobot {
- public:
-
-  int mode = 1 ;
-  float deadzoneValue = 0.05f;
-  
-  float coastInc = 0.1f;
-
-  float leftX = 0;
-  float leftY = 0;
-  float rightX = 0;
-  float rightY = 0;
-
-  float driveL0 = 0;
+float driveL0 = 0;
   float driveL1 = 0;
   float driveR0 = 0;
   float driveR1 = 0;
@@ -67,10 +56,36 @@ class Robot : public frc::TimedRobot {
   float turnTable = 0;
   float hook = 0;
 
-  frc::Color red{200, 0, 0};
-  frc::Color yellow{200, 200, 0};
-  frc::Color blue{0, 200, 200};
-  frc::Color green{0, 200, 0};
+  double confidence = 0.5;
+
+  frc::Color detectedColor = frc::Color::kBlack;
+
+class Robot : public frc::TimedRobot {
+ public:
+  bool move = false;
+  frc::Color targetColor;
+  int mode = 1 ;
+  float deadzoneValue = 0.05f;
+  
+  float coastInc = 0.1f;
+
+  float leftX = 0;
+  float leftY = 0;
+  float rightX = 0;
+  float rightY = 0;
+
+  
+  int piecesTravelled = 0;
+  frc::Color initialColor = detectedColor;
+  frc::Color prevColor = detectedColor;
+
+
+  frc::Color red = frc::Color(0.561, 0.232, 0.114);
+  frc::Color green = frc::Color(0.197, 0.561, 0.240);
+  frc::Color blue = frc::Color(0.143, 0.427, 0.429);
+  frc::Color yellow = frc::Color(0.361, 0.524, 0.113);
+
+  rev::ColorMatch matcher;
 
   void spencerArm() {
     if(m_leftStick.GetRawButton(6)) {
@@ -113,10 +128,10 @@ class Robot : public frc::TimedRobot {
     }
   }
 
-  bool colorsEqual(frc::Color c1, frc::Color c2 { // huge range of 110 here lol
-    if(c1.red - 55 < c2.red && c1.red + 55 > c2.red) {
-      if(c1.blue - 55 < c2.blue && c1.blue + 55 > c2.blue) {
-        if(c1.green - 55 < c2.green && c1.green + 55 > c2.green) {
+  static bool colorsEqual(frc::Color c1, frc::Color c2) { // huge range of 110 here lol
+    if(c1.red*255 - 25 < c2.red*255 && c1.red*255 + 25 > c2.red*255) {
+      if(c1.blue*255 - 25 < c2.blue*255 && c1.blue*255 + 25 > c2.blue*255) {
+        if(c1.green*255 - 25 < c2.green*255 && c1.green*255 + 25 > c2.green*255) {
           return true;
         }
       }
@@ -124,27 +139,29 @@ class Robot : public frc::TimedRobot {
     return false;
   }
 
-  void turnThread(frc::Color targetColor) {
+  void turnThread() {
     // std::chrono::milliseconds time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     // std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     // while(time.count() + 725*(degrees/360*8) > now.count()) {
     //   (*turn) = -0.25;
     //   now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    // }
+    // } гк ьщь ьщьуте
+    
 
-    int piecesTravelled = 0;
-    frc::Color initialColor = sensor.GetColor();
-    frc::Color prevColor = sensor.GetColor();
-    while(piecesTravelled <= 24) {
-      turnTable = -1;
-      if(!colorsEqual(prevColor, sensor.GetColor())) {
+    if(piecesTravelled <= 24) {
+      turnTable = -0.25;
+      if(matcher.MatchClosestColor(prevColor, confidence) != matcher.MatchClosestColor(detectedColor, confidence)) {
         piecesTravelled++;
+        wpi::outs() << piecesTravelled;
       }
-      prevColor = sensor.GetColor();
-    }
-
-    while(!colorsEqual(sensor.GetColor(), targetColor)) {
-      turnTable = -1;
+      prevColor = detectedColor;
+    } else {
+      if(matcher.MatchClosestColor(detectedColor, confidence) != matcher.MatchClosestColor(targetColor, confidence)) {
+        turnTable = -1;
+        wpi::outs() << "\nred" << (int)(detectedColor.red*255) << "\ngreen" << (int)(detectedColor.green*255) << "\nblue" << (int)(detectedColor.blue*255) << "\n";
+      } else {
+        move = false;
+      }
     }
       
   }
@@ -188,13 +205,14 @@ class Robot : public frc::TimedRobot {
       deadzone(&rightY, deadzoneValue);
 
       switch(mode) {
-        case 0:
+        case 0: {
           m_driveMotorL0.Set(-leftY);
           m_driveMotorL1.Set(-leftY);
           m_driveMotorR0.Set(rightY); 
           m_driveMotorR1.Set(rightY);
           break;
-        case 1: // this is the default profile
+        }
+        case 1: {// this is the default profile
           if(rightX == 0) {} // figure the gyro out (if we get one)
           driveL0 = leftY - (rightX * 2);
           driveR0 = leftY -  (-rightX * 2);
@@ -203,24 +221,26 @@ class Robot : public frc::TimedRobot {
           spencerShoot();
           spencerArm();
 
-          // if(m_rightStick.GetRawButtonPressed(5)) {
-          //   thread.detach();
-          // } 
-          if(m_rightStick.GetRawButtonPressed(9)) { // 720
-            std::thread thread(turnThread, green);
-            thread.detach();
+          if(m_rightStick.GetRawButtonPressed(9)) {
+            move = true;
+            targetColor = red;
           }
-          if(m_rightStick.GetRawButtonPressed(10)) { // 765
-            std::thread thread(turnThread, blue);
-            thread.detach();
+
+          if(move) {
+            turnThread();
           }
-          if(m_rightStick.GetRawButtonPressed(11)) { // 810
-            std::thread thread(turnThread, yellow);
-            thread.detach();
+
+          if(m_rightStick.GetRawButtonPressed(10)) {
+            // std::thread thread(turnThread, green);
+            // thread.detach();
           }
-          if(m_rightStick.GetRawButtonPressed(12)) { // 855
-            std::thread thread(turnThread, red);
-            thread.detach();
+          if(m_rightStick.GetRawButtonPressed(11)) {
+            // std::thread thread(turnThread, blue);
+            // thread.detach();
+          }
+          if(m_rightStick.GetRawButtonPressed(12)) {
+            // std::thread thread(turnThread, yellow);
+            // thread.detach();
           }
 
           if(m_rightStick.GetRawButton(6)) {
@@ -231,12 +251,14 @@ class Robot : public frc::TimedRobot {
           }
 
           break;
-        case 2:
+        }
+        case 2: {
           m_driveMotorL0.Set(-leftY + (leftX * 2));
           m_driveMotorL1.Set(-leftY + (leftX * 2));
           m_driveMotorR0.Set(leftY - (-leftX * 2));
           m_driveMotorR1.Set(leftY - (-leftX * 2));
           break;
+        }
       }
 
       // profiles
@@ -265,12 +287,13 @@ class Robot : public frc::TimedRobot {
         m_armMotor.Set(arm);
       }
 
-      // frc::SmartDashboard::PutNumber("Test", 1);
+      detectedColor = sensor.GetColor();
+
+      // wpi::outs() << "Red: " << (int)(color.red*255) << "\nGreen: " << (int)(color.green*255) << "\nBlue: " << (int)(color.blue*255) << "\n";
+
     }
 
     void RobotInit() override {
-      // std::thread visionThread(VisionThread);
-      // visionThread.\detach();
       armEncoder.SetReverseDirection(true);
       m_driveMotorL0.SetInverted(true);
       m_driveMotorL1.SetInverted(true);
@@ -278,6 +301,11 @@ class Robot : public frc::TimedRobot {
       m_intakeMotor.SetInverted(true);
       m_ejectMotorL0.SetInverted(true);
       m_ejectMotorL1.SetInverted(true);
+
+      matcher.AddColorMatch(red);
+      matcher.AddColorMatch(green);
+      matcher.AddColorMatch(blue);
+      matcher.AddColorMatch(yellow);
     }
 
     void AutonomousInit() override {
