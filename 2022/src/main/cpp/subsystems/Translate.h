@@ -12,6 +12,7 @@ class Translate {
         void ResetAngle();
     private:
         void RotateThread(double angle);
+        bool killThread = false;
 
         frc::PWMSparkMax frontLeft;
         frc::PWMSparkMax frontRight;

@@ -29,29 +29,35 @@ void Translate::Drive(double power, double angle) { // 1 forward, -1 backward
 }
 
 double Translate::GetAngle() {
-    return frontLeftEncoder.GetDistance();
+    return (frontLeftEncoder.GetDistance() + frontRightEncoder.GetDistance() + backLeftEncoder.GetDistance() + backRightEncoder.GetDistance()) / 4;
 }
 
 void Translate::SetAngle(double angle) { // 1 right, -1 left
-    std::thread thread(RotateThread, angle);
-    thread.detach();
+    killThread = true;
+    std::thread rotateThread(RotateThread, angle);
+    rotateThread.detach();
 }
 
 void Translate::RotateThread(double angle) {
     // im assuming encoders go from 0 to 360 and not -180 to 180?
     // this wont account for wrapping, implement that later
+    killThread = false;
     double power = 0;
 
     if(Translate::GetAngle() < angle) power = -1;
     else power = 1;
-
-    while(frontLeftEncoder.GetDistance() - 0.5 > GetAngle() && frontLeftEncoder.GetDistance() + 0.5 < GetAngle()) {
-        frontLeftRotate.Set(1);
-        frontRightRotate.Set(1);
-        backLeftRotate.Set(1);
-        backRightRotate.Set(1);
+    // while(frontLeftEncoder.GetDistance() - 0.5 > GetAngle() && frontLeftEncoder.GetDistance() + 0.5 < GetAngle()) {
+    while(true) {
+        if(frontLeftEncoder.GetDistance() - 0.5 > GetAngle() && frontLeftEncoder.GetDistance() + 0.5 < GetAngle())
+        frontLeftRotate.Set(power);
+        if(frontRightEncoder.GetDistance() - 0.5 > GetAngle() && frontRightEncoder.GetDistance() + 0.5 < GetAngle())
+        frontRightRotate.Set(power);
+        if(backLeftEncoder.GetDistance() - 0.5 > GetAngle() && backLeftEncoder.GetDistance() + 0.5 < GetAngle())
+        backLeftRotate.Set(power);
+        if(backRightEncoder.GetDistance() - 0.5 > GetAngle() && backRightEncoder.GetDistance() + 0.5 < GetAngle())
+        backRightRotate.Set(power);
+        if(killThread) break;
     }
-
     frontLeftRotate.Set(0);
     frontRightRotate.Set(0);
     backLeftRotate.Set(0);
@@ -64,3 +70,4 @@ void Translate::ResetAngle() {
     backLeftEncoder.Reset();
     backLeftEncoder.Reset();
 }
+

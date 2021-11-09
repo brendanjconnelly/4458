@@ -12,6 +12,7 @@
 #include <frc/Joystick.h>
 
 #include "subsystems/Translate.h"
+#include "subsystems/Rotate.h"
 #include "MathHelper.h"
 class Robot : public frc::TimedRobot {
   void RobotInit() {
@@ -63,11 +64,12 @@ class Robot : public frc::TimedRobot {
   }
 
   void TeleopInit() {
-
+    
   }
 
   void TeleopPeriodic() {
     m_translate.Drive(pythagorean(leftStick.GetX(), leftStick.GetY()), leftStick.GetDirectionDegrees());
+    m_rotate.Turn(rightStick.GetX());
   }
 
   void DisabledInit() {}
@@ -82,6 +84,7 @@ class Robot : public frc::TimedRobot {
     frc::Joystick leftStick{0};
     frc::Joystick rightStick{1};
     Translate m_translate;
+    Rotate m_rotate;
     // frc::SendableChooser<frc2::Command*> m_chooser;
 };
 
