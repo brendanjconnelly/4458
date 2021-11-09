@@ -8,11 +8,11 @@ class Translate {
         Translate();
         void Drive(double power, double angle);
         double GetAngle();
-        void SetAngle(double angle);
+        void SetAngle(double angle, Translate *translate);
         void ResetAngle();
     private:
-        void RotateThread(double angle);
-        bool killThread = false;
+        static void RotateThread(double angle, Translate *translate);
+        bool killThread;
 
         frc::PWMSparkMax frontLeft;
         frc::PWMSparkMax frontRight;
