@@ -24,7 +24,6 @@ Translate::Translate() :
 
     frontLeftRotate.SetInverted(true);
     backLeftRotate.SetInverted(true);
-    
     frontLeftEncoder.SetReverseDirection(true);
     backLeftEncoder.SetReverseDirection(true);
 }
