@@ -1,17 +1,18 @@
-#ifndef TRANSLATE_H
-#define TRANSLATE_H
-
 #include <frc/PWMSparkMax.h>
 #include <frc/Encoder.h>
-class Translate {
+
+#ifndef SWERVE_H
+#define SWERVE_H
+
+class Swerve {
     public:
-        Translate();
-        void Drive(double power, double angle);
-        double GetAngle();
-        void SetAngle(double angle, Translate *translate);
+        Swerve(double l, double w);
+        void Drive(double y1, double x2, double y2);
+        double GetAngle(frc::Encoder encoder);
+        void SetAngle(double angle, frc::PWMSparkMax motor, frc::Encoder encoder);
         void ResetAngle();
     private:
-        static void RotateThread(double angle, Translate *translate);
+        // static void RotateThread(double angle, frc::PWMSparkMax motor, frc::Encoder encoder, Swerve *translate);
         bool killThread;
 
         frc::PWMSparkMax frontLeft;
@@ -28,5 +29,7 @@ class Translate {
         frc::Encoder frontRightEncoder;
         frc::Encoder backLeftEncoder;
         frc::Encoder backRightEncoder;
+
+        double l, w, A, B, C, D, R;
 };
 #endif

@@ -12,7 +12,8 @@
 
 #include "subsystems/Translate.h"
 #include "subsystems/Rotate.h"
-#include "MathHelper.h"
+#include "MathHelper.h"  
+
 class Robot : public frc::TimedRobot {
   void RobotInit() {
     // m_chooser.SetDefaultOption("Drive Forward", driveForward);
@@ -67,8 +68,7 @@ class Robot : public frc::TimedRobot {
   }
 
   void TeleopPeriodic() {
-    m_translate.Drive(pythagorean(leftStick.GetX(), leftStick.GetY()), leftStick.GetDirectionDegrees());
-    m_rotate.Turn(rightStick.GetX());
+    m_swerve.Drive(pythagorean(leftStick.GetX(), leftStick.GetY());
   }
 
   void DisabledInit() {}
@@ -82,8 +82,7 @@ class Robot : public frc::TimedRobot {
   private:
     frc::Joystick leftStick{0};
     frc::Joystick rightStick{1};
-    Translate m_translate;
-    Rotate m_rotate;
+    Swerve m_swerve;
     // frc::SendableChooser<frc2::Command*> m_chooser;
 };
 
