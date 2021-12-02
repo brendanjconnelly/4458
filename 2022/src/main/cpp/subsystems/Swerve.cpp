@@ -46,6 +46,10 @@ void Swerve::Drive(double x1, double y1, double x2) { // 1 forward, -1 backward
     frontLeft.Set(pythagorean(A, C));
 
     frontRightRotate.
+        
+    // mecanum
+    // x: pythagorean(Ax, Bx) * cos((theta+jsa)/psi)
+    // x: pythagorean(Ax, Bx) * sin((theta+jsa)/psi)
 }
 
 double Swerve::GetAngle(frc::Encoder encoder) {
